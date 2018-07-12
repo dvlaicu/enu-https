@@ -9,7 +9,7 @@
 # that file. You need to temporary allow access to 80 port until the deployment
 # is finished.
 # Dragos Vlaicu - 07/08/2018 - ENU BP - dragosvlaicu
-# Version: 1.0
+# Version: 1.1
 
 # web url for your http ENU server.
 url='http://localhost:8000'
@@ -18,12 +18,22 @@ domain='domainname.hopto.org'
 # a valid email address that can be used to recover the certificate if needed
 email='validemailforrecovery@mail.com'
 
-sudo apt-get update
-sudo apt-get install sudo software-properties-common -y
-# Add certbot repository to automate let's encrypt certification configuration
-sudo add-apt-repository ppa:certbot/certbot -y
-# Install nginx, python-certbot-nginx and dependencies
-sudo apt-get install nginx python-certbot-nginx -y
+# check if nginx and certbot is installed or not
+which nginx >/dev/null
+if [[ $? -ne 0 ]]; then
+  # update the repo and install NGINX
+  sudo apt-get update
+  sudo apt-get install nginx -y
+  # check for certbot instllation package
+  which certbot
+  if [[ $? -ne 0 ]]; then
+    sudo apt-get install sudo software-properties-common -y
+    # Add certbot repository to automate let's encrypt certification configuration
+    sudo add-apt-repository ppa:certbot/certbot -y
+    # Install python-certbot-nginx and dependencies
+    sudo apt-get install python-certbot-nginx -y
+  fi
+fi
 
 # we need to create some dummy selfsigned certs in order to allow nginx to start using a valid SSL configuration
 mkdir /tmp/dummycerts
@@ -38,10 +48,9 @@ echo 'server {
     ssl on;
     ssl_certificate /tmp/dummycerts/certificate.pem;
     ssl_certificate_key /tmp/dummycerts/privkey.pem;
-    ssl_session_cache shared:SSL:10m;
+    include /etc/letsencrypt/options-ssl-nginx.conf
 
     location / {
-
         proxy_pass '${url}';
         proxy_set_header Host $host;
 
@@ -60,3 +69,5 @@ sudo certbot --nginx -d ${domain} -m ${email} -n --agree-tos
 rm -fr /tmp/dummycerts
 # enable NGINX to start at boot
 sudo systemctl enable nginx
+# reload config if needed
+sudo systemctl reload nginx
