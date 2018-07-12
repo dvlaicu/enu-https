@@ -48,7 +48,7 @@ echo 'server {
     ssl on;
     ssl_certificate /tmp/dummycerts/certificate.pem;
     ssl_certificate_key /tmp/dummycerts/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf
+    include /etc/letsencrypt/options-ssl-nginx.conf;
 
     location / {
         proxy_pass '${url}';
